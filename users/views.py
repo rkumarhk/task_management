@@ -5,14 +5,21 @@ from rest_framework.exceptions import NotFound, ValidationError, APIException
 from django.db import transaction
 from .serializers import UserSerializer
 from .models import User
+from rest_framework.permissions import IsAuthenticated
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 
 
 class SignUpView(APIView):
-    permission_classes = [permissions.AllowAny]
     serializer_class = UserSerializer
+
+    def get_object(self, pk):
+        try:
+            return User.objects.get(id=pk)
+        except User.DoesNotExist:
+            raise NotFound(detail="User not found")
 
     def post(self, request):
         try:
@@ -25,11 +32,75 @@ class SignUpView(APIView):
         except Exception as e:
             raise APIException(f"An error occurred: {str(e)}")
         
-    def get(self, request):
+    def get(self, request, pk=None):
         try:
-            users = User.objects.all()
-            serializer = UserSerializer(users, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            if pk:
+                user = self.get_object(pk)
+                serializer = UserSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                if not request.user.is_authenticated:
+                    return Response({
+                        "message": "You are not authenticated"
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+                users = User.objects.all()
+                serializer = UserSerializer(users, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            raise APIException(f"An error occurred: {str(e)}")
+        
+
+    def put(self, request, pk=None):
+        try:
+            if not pk:
+                return Response({
+                    "message": "User ID is required"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+
+            user = self.get_object(pk)
+ 
+            if user != request.user:
+                return Response({
+                    "message": "You do not have permission to update this profile"
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                updated_profile = serializer.save()
+                return Response({
+                    "message": "Profile updated successfully",
+                    "data": UserSerializer(updated_profile).data
+                }, status=status.HTTP_200_OK)
+                    
+            return Response({
+                "message": "Invalid data",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except User.DoesNotExist:
+            return Response({
+                "message": "User not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            raise APIException(f"An error occurred: {str(e)}")
+        
+    def delete(self, request):
+        try:
+            user = request.user
+            user.is_active = False
+            # user.is_delete = True
+            user.save()
+            return Response({
+                "message": "Profile deleted successfully"
+            }, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({
+                "message": "User not found"
+            }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             raise APIException(f"An error occurred: {str(e)}")
         
@@ -59,8 +130,10 @@ class LoginAPIView(APIView):
                         'errors': {'non_field_errors': ['Account is not active']}
                     }, status=status.HTTP_400_BAD_REQUEST)
 
+                authenticate_user = authenticate(username=email, password=password)
+                # if authenticate_user is not None:
+                #     login(request, authenticate_user)
                 refresh = RefreshToken.for_user(user)
-                login(request, user)  # Log the user in
                 
                 return Response({
                     'status': True,
