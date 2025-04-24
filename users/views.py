@@ -7,6 +7,7 @@ from .serializers import UserSerializer
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer
+from django.contrib.auth import login
 
 
 class SignUpView(APIView):
@@ -35,7 +36,7 @@ class SignUpView(APIView):
 
 
 class LoginAPIView(APIView):
-    permission_classes = []
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         try:
@@ -59,6 +60,7 @@ class LoginAPIView(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
 
                 refresh = RefreshToken.for_user(user)
+                login(request, user)  # Log the user in
                 
                 return Response({
                     'status': True,
