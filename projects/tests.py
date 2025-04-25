@@ -8,9 +8,9 @@ class TaskManagementTests(APITestCase):
 
     def setUp(self):
         # Create test users
-        self.admin_user = User.objects.create_superuser(email="admin4@example.com", username="admin4@example.com", password="adminpass")
-        self.project_manager = User.objects.create_user(email="manager4@example.com", username="manager4@example.com",  first_name= "Rohit", password="managerpass", job_role="projectmanager")
-        self.developer = User.objects.create_user(email="developer4@example.com", username="developer4@example.com", first_name= "Manan", password="devpass", job_role="developer")
+        self.admin_user = User.objects.create_superuser(email="admin4@example.com",  password="adminpass")
+        self.project_manager = User.objects.create_user(email="manager4@example.com",   first_name= "Rohit", password="managerpass", job_role="projectmanager")
+        self.developer = User.objects.create_user(email="developer4@example.com", first_name= "Manan", password="devpass", job_role="developer")
 
         # Authenticate admin user
         self.client.login(email="admin@example.com", password="adminpass")
@@ -30,7 +30,7 @@ class TaskManagementTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_user(self):
-        data = {"email": "newuser@example.com", "password": "newpass", "role": "developer"}
+        data = {"email": "newuser@example.com", "password": "newpass", "job_role": "developer"}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 

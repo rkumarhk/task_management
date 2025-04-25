@@ -23,7 +23,7 @@ class CustomPagination(PageNumberPagination):
 
 
 class ProjectApiView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     # authentication_classes = [JWTAuthentication]
     queryset = Project.objects.filter(is_active=True) 
     serializer_class = ProjectCreateSerializer
@@ -116,10 +116,10 @@ class ProjectApiView(APIView):
         try:
             user = request.user
 
-            # if user.role != 'projectmanager':
-            #     return Response({
-            #         "message": "You do not have permission to create a project"
-            #     }, status=status.HTTP_403_FORBIDDEN)
+            if user.role != 'projectmanager':
+                return Response({
+                    "message": "You do not have permission to create a project"
+                }, status=status.HTTP_403_FORBIDDEN)
             
             data = request.data
             serializer = ProjectCreateSerializer(data=data)
@@ -142,10 +142,10 @@ class ProjectApiView(APIView):
 
             project = self.get_object(pk)
 
-            # if project.created_by != request.user:
-            #     return Response({
-            #         "message": "You do not have permission to update this project"
-            #     }, status=status.HTTP_403_FORBIDDEN)
+            if project.created_by != request.user:
+                return Response({
+                    "message": "You do not have permission to update this project"
+                }, status=status.HTTP_403_FORBIDDEN)
             
 
             serializer = ProjectCreateSerializer(project, data=request.data, partial=True)
@@ -180,11 +180,11 @@ class ProjectApiView(APIView):
             project = self.get_object(pk)
             
             # Check if user has permission to delete
-            # user = request.user
-            # if user.role not in ['superadmin', 'admin', 'projectmanager']:
-            #     return Response({
-            #         "message": "You do not have permission to delete this project"
-            #     }, status=status.HTTP_403_FORBIDDEN)
+            user = request.user
+            if user.role not in ['superadmin', 'admin', 'projectmanager']:
+                return Response({
+                    "message": "You do not have permission to delete this project"
+                }, status=status.HTTP_403_FORBIDDEN)
 
             with transaction.atomic():
                 project.delete()
@@ -204,7 +204,7 @@ class ProjectApiView(APIView):
 
 
 class TaskApiView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
     pagination_class = CustomPagination
@@ -334,10 +334,10 @@ class TaskApiView(APIView):
             
             # Check if user has permission to delete
             user = request.user
-            # if task.created_by != user or user.role not in ['superadmin', 'admin', 'projectmanager']:
-            #     return Response({
-            #         "message": "You do not have permission to delete this task"
-            #     }, status=status.HTTP_403_FORBIDDEN)
+            if task.created_by != user or user.role not in ['superadmin', 'admin', 'projectmanager']:
+                return Response({
+                    "message": "You do not have permission to delete this task"
+                }, status=status.HTTP_403_FORBIDDEN)
 
             
             task.is_active = False
@@ -359,7 +359,7 @@ class TaskApiView(APIView):
     
 
 class CommentApiView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     queryset = Comment.objects.all()
     serializer_class = CommentCreateSerializer
     pagination_class = CustomPagination
@@ -490,10 +490,10 @@ class CommentApiView(APIView):
             
             # Check if user has permission to delete
             user = request.user
-            # if user.job_role not in ['superadmin', 'admin', 'projectmanager']:
-            #     return Response({
-            #         "message": "You do not have permission to delete this project"
-            #     }, status=status.HTTP_403_FORBIDDEN)
+            if user.job_role not in ['superadmin', 'admin', 'projectmanager']:
+                return Response({
+                    "message": "You do not have permission to delete this project"
+                }, status=status.HTTP_403_FORBIDDEN)
 
             with transaction.atomic():
                 comment.is_active = False
