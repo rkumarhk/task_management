@@ -11,6 +11,9 @@ from .models import Project, Task, Comment
 # from users.pagination import CustomPagination
 from rest_framework.pagination import PageNumberPagination
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -79,7 +82,7 @@ class ProjectApiView(APIView):
         except Project.DoesNotExist:
             raise NotFound(detail="Project not found")
 
-    
+    @method_decorator(cache_page(60 * 15))
     def get(self, request, pk=None):
         # try:
             print("Authorization Header:", request.headers.get('Authorization'))
@@ -139,10 +142,10 @@ class ProjectApiView(APIView):
 
             project = self.get_object(pk)
 
-            if project.created_by != request.user:
-                return Response({
-                    "message": "You do not have permission to update this project"
-                }, status=status.HTTP_403_FORBIDDEN)
+            # if project.created_by != request.user:
+            #     return Response({
+            #         "message": "You do not have permission to update this project"
+            #     }, status=status.HTTP_403_FORBIDDEN)
             
 
             serializer = ProjectCreateSerializer(project, data=request.data, partial=True)
@@ -177,11 +180,11 @@ class ProjectApiView(APIView):
             project = self.get_object(pk)
             
             # Check if user has permission to delete
-            user = request.user
-            if user.role not in ['superadmin', 'admin', 'projectmanager']:
-                return Response({
-                    "message": "You do not have permission to delete this project"
-                }, status=status.HTTP_403_FORBIDDEN)
+            # user = request.user
+            # if user.role not in ['superadmin', 'admin', 'projectmanager']:
+            #     return Response({
+            #         "message": "You do not have permission to delete this project"
+            #     }, status=status.HTTP_403_FORBIDDEN)
 
             with transaction.atomic():
                 project.delete()
@@ -256,7 +259,7 @@ class TaskApiView(APIView):
         except Task.DoesNotExist:
             raise NotFound(detail="Task not found")
 
-    
+    @method_decorator(cache_page(60 * 15))
     def get(self, request, pk=None):
         try:
             if pk:
@@ -331,10 +334,10 @@ class TaskApiView(APIView):
             
             # Check if user has permission to delete
             user = request.user
-            if task.created_by != user or user.role not in ['superadmin', 'admin', 'projectmanager']:
-                return Response({
-                    "message": "You do not have permission to delete this task"
-                }, status=status.HTTP_403_FORBIDDEN)
+            # if task.created_by != user or user.role not in ['superadmin', 'admin', 'projectmanager']:
+            #     return Response({
+            #         "message": "You do not have permission to delete this task"
+            #     }, status=status.HTTP_403_FORBIDDEN)
 
             
             task.is_active = False
@@ -413,7 +416,7 @@ class CommentApiView(APIView):
         except Comment.DoesNotExist:
             raise NotFound(detail="Comment not found")
 
-    
+    @method_decorator(cache_page(60 * 15))
     def get(self, request, pk=None):
         try:
             if pk:
@@ -487,10 +490,10 @@ class CommentApiView(APIView):
             
             # Check if user has permission to delete
             user = request.user
-            if user.role not in ['superadmin', 'admin', 'projectmanager']:
-                return Response({
-                    "message": "You do not have permission to delete this project"
-                }, status=status.HTTP_403_FORBIDDEN)
+            # if user.job_role not in ['superadmin', 'admin', 'projectmanager']:
+            #     return Response({
+            #         "message": "You do not have permission to delete this project"
+            #     }, status=status.HTTP_403_FORBIDDEN)
 
             with transaction.atomic():
                 comment.is_active = False

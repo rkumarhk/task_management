@@ -86,7 +86,7 @@ class User(AbstractUser):
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=16, choices=ROLE_CHOICES, default="developer")
+    job_role = models.CharField(max_length=16, choices=ROLE_CHOICES, default="developer")
     account_status = models.CharField(blank=True, null=True, choices=ACCOUNT_STATUS, max_length=10)
 
     fcm = models.CharField(max_length=510, blank=True, null=True)
