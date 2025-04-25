@@ -16,17 +16,13 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("username", email)  # Set username to email
 
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
-
-        return self.create_user(email, password, **extra_fields)
+    def create_superuser(self, email, password=None, name=None):
+        user = self.create_user(email, password=password, name=name, role='Admin')
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+ 
 
 
 class User(AbstractUser):
@@ -95,6 +91,22 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['name']
+ 
+    def __str__(self):
+        return self.email
+ 
+    def has_perm(self, perm, obj=None):
+        return True
+ 
+    def has_module_perms(self, app_label):
+        return True
+ 
+    @property
+    def is_staff(self):
+        return self.is_admin
 
     class Meta:
         ordering = 'id',

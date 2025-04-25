@@ -23,6 +23,7 @@ class SignUpView(APIView):
         try:
             return User.objects.get(id=pk)
         except User.DoesNotExist:
+            print("User not found custom")
             raise NotFound(detail="User not found")
 
     def post(self, request):
@@ -113,6 +114,7 @@ class SignUpView(APIView):
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    ission_classes = [permissions.AllowAny]
 
     @swagger_auto_schema(
         operation_description="User login API",

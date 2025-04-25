@@ -25,7 +25,7 @@ class CustomPagination(PageNumberPagination):
 class ProjectApiView(APIView):
     permission_classes = [permissions.AllowAny]
     # authentication_classes = [JWTAuthentication]
-    queryset = Project.objects.all()
+    queryset = Project.objects.filter(is_active=True) 
     serializer_class = ProjectCreateSerializer
     pagination_class = CustomPagination
 
@@ -84,7 +84,7 @@ class ProjectApiView(APIView):
 
     @method_decorator(cache_page(60 * 15))
     def get(self, request, pk=None):
-        # try:
+        try:
             print("Authorization Header:", request.headers.get('Authorization'))
             # Check if the user is authenticated
             if request.user.is_authenticated:
@@ -104,12 +104,12 @@ class ProjectApiView(APIView):
                     # If pagination is not used, return all results
                 serializer = ProjectListSerializer(self.queryset.all(), many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
-        # except Exception as e:
-        #     print("Authorization Header:", request.headers.get('Authorization'))
-        #     # Check if the user is authenticated
-        #     if request.user.is_authenticated:
-        #         return Response({"message": "Welcome Back!"}, status=status.HTTP_200_OK)
-        #     raise APIException(f"An error occurred here: {str(e)}")
+        except Exception as e:
+            print("Authorization Header:", request.headers.get('Authorization'))
+            # Check if the user is authenticated
+            if request.user.is_authenticated:
+                return Response({"message": "Welcome Back!"}, status=status.HTTP_200_OK)
+            raise APIException(f"An error occurred here: {str(e)}")
         
     
     def post(self, request):
