@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.exceptions import NotFound, ValidationError, APIException
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db import transaction
 from .serializers import ProjectListSerializer, ProjectCreateSerializer, \
     TaskCreateSerializer, TaskListSerializer, CommentCreateSerializer
@@ -18,12 +19,34 @@ class CustomPagination(PageNumberPagination):
 
 
 
-
 class ProjectApiView(APIView):
     permission_classes = [permissions.AllowAny]
+    # authentication_classes = [JWTAuthentication]
     queryset = Project.objects.all()
     serializer_class = ProjectCreateSerializer
     pagination_class = CustomPagination
+
+    print("Authorization Header:")
+
+    def get_queryset(self):
+        """
+        Filter the queryset based on query parameters.
+        """
+        queryset = self.queryset
+        status = self.request.query_params.get('status')
+        priority = self.request.query_params.get('priority')
+        created_by = self.request.query_params.get('created_by')
+
+        if status:
+            queryset = queryset.filter(status=status)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        if created_by:
+            queryset = queryset.filter(created_by_id=created_by)
+
+        
+
+        return queryset
 
 
     def get_paginator(self):
@@ -58,13 +81,17 @@ class ProjectApiView(APIView):
 
     
     def get(self, request, pk=None):
-        try:
+        # try:
+            print("Authorization Header:", request.headers.get('Authorization'))
+            # Check if the user is authenticated
+            if request.user.is_authenticated:
+                return Response({"message": "Welcome Back!"}, status=status.HTTP_200_OK)
             if pk:
                 project = self.get_object(pk)
                 serializer = ProjectListSerializer(project)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                queryset = self.queryset.all()
+                queryset = self.get_queryset().all()
                 page = self.paginate_queryset(queryset) 
 
                 if page is not None:
@@ -74,8 +101,12 @@ class ProjectApiView(APIView):
                     # If pagination is not used, return all results
                 serializer = ProjectListSerializer(self.queryset.all(), many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            raise APIException(f"An error occurred: {str(e)}")
+        # except Exception as e:
+        #     print("Authorization Header:", request.headers.get('Authorization'))
+        #     # Check if the user is authenticated
+        #     if request.user.is_authenticated:
+        #         return Response({"message": "Welcome Back!"}, status=status.HTTP_200_OK)
+        #     raise APIException(f"An error occurred here: {str(e)}")
         
     
     def post(self, request):
@@ -175,6 +206,25 @@ class TaskApiView(APIView):
     serializer_class = TaskCreateSerializer
     pagination_class = CustomPagination
 
+    
+    def get_queryset(self):
+        """
+        Filter the queryset based on query parameters.
+        """
+        queryset = self.queryset
+        status = self.request.query_params.get('status')
+        priority = self.request.query_params.get('priority')
+        created_by = self.request.query_params.get('created_by')
+
+        if status:
+            queryset = queryset.filter(status=status)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        
+
+        return queryset
+
+
 
     def get_paginator(self):
         """
@@ -215,7 +265,7 @@ class TaskApiView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 # projects = Project.objects.all()
-                queryset = self.queryset.all()
+                queryset = self.get_queryset().all()
                 page = self.paginate_queryset(queryset)
 
                 if page is not None:
@@ -311,6 +361,27 @@ class CommentApiView(APIView):
     serializer_class = CommentCreateSerializer
     pagination_class = CustomPagination
 
+    def get_queryset(self):
+        """
+        Filter the queryset based on query parameters.
+        """
+        queryset = self.queryset
+
+        status = self.request.query_params.get('status')
+        q = self.request.query_params.get('q')
+        priority = self.request.query_params.get('priority')
+        created_by = self.request.query_params.get('created_by')
+
+        if status:
+            queryset = queryset.filter(status=status)
+        if q:
+            queryset = queryset.filter(content__icontains=q)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        if created_by:
+            queryset = queryset.filter(author_id=created_by)
+
+        return queryset
 
     def get_paginator(self):
         """
@@ -350,7 +421,7 @@ class CommentApiView(APIView):
                 serializer = CommentCreateSerializer(comments)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                queryset = self.queryset.all()
+                queryset = self.get_queryset().all()
                 page = self.paginate_queryset(queryset)
                 if page is not None:    
                     serializer = CommentCreateSerializer(page, many=True)

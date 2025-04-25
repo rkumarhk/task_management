@@ -2,7 +2,11 @@ from django.urls import path, include
 from .views import ProjectApiView, TaskApiView, CommentApiView
 from users.swagger import schema_view
 
+
+
+
 urlpatterns = [
+    
     path('projects/', ProjectApiView.as_view(), name='project-view'),
     path('projects/<int:pk>/', ProjectApiView.as_view(), name='project-detail'),
     path('task/', TaskApiView.as_view(), name='task-view'),

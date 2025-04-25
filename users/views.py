@@ -11,9 +11,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer
 from django.contrib.auth import login, authenticate
 
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 
 class SignUpView(APIView):
     serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_object(self, pk):
         try:
@@ -39,10 +43,10 @@ class SignUpView(APIView):
                 serializer = UserSerializer(user)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                if not request.user.is_authenticated:
-                    return Response({
-                        "message": "You are not authenticated"
-                    }, status=status.HTTP_401_UNAUTHORIZED)
+                # if not request.user.is_authenticated:
+                #     return Response({
+                #         "message": "You are not authenticated"
+                #     }, status=status.HTTP_401_UNAUTHORIZED)
                 users = User.objects.all()
                 serializer = UserSerializer(users, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -109,6 +113,25 @@ class SignUpView(APIView):
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
+
+    @swagger_auto_schema(
+        operation_description="User login API",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['email', 'password'],
+            properties={
+                'email': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_EMAIL,
+                    description="User's email address"
+                ),
+                'password': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_PASSWORD,
+                    description="User's password"
+                )
+            }
+        ))
     def post(self, request):
         try:
             serializer = LoginSerializer(data=request.data)
@@ -131,8 +154,8 @@ class LoginAPIView(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
 
                 authenticate_user = authenticate(username=email, password=password)
-                # if authenticate_user is not None:
-                #     login(request, authenticate_user)
+                if authenticate_user is not None:
+                    login(request, authenticate_user)
                 refresh = RefreshToken.for_user(user)
                 
                 return Response({
